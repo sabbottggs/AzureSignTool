@@ -1,20 +1,19 @@
-name: Build and Release AzureSignTool
+name: Release
 
 on:
   push:
     tags:
-      - 'v*'  # Trigger on any tag starting with v
+      - 'v*'  # Triggers on tags that start with 'v'
 
 jobs:
   build:
-    name: Build AzureSignTool
     runs-on: windows-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup .NET
+      - name: Set up .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
@@ -22,23 +21,22 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore
 
-      - name: Build (Release)
-        run: dotnet build src/AzureSignTool/AzureSignTool.csproj -c Release
+      # ✅ Build 1: Self-contained single file (portable)
+      - name: Publish self-contained single-file
+        run: dotnet publish src/AzureSignTool/AzureSignTool.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishAot=false -o publish/self-contained
 
-      - name: Publish self-contained EXE
-        run: dotnet publish src/AzureSignTool/AzureSignTool.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishAot=false -o publish
+      # ✅ Build 2: Framework-dependent (small)
+      - name: Publish framework-dependent
+        run: dotnet publish src/AzureSignTool/AzureSignTool.csproj -c Release -r win-x64 --self-contained false -o publish/framework
 
-      - name: Archive EXE
-        uses: actions/upload-artifact@v4
-        with:
-          name: AzureSignTool
-          path: publish/AzureSignTool.exe
-
+      # ✅ Upload both EXEs to the GitHub release
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: AzureSignTool ${{ github.ref_name }}
           tag_name: ${{ github.ref_name }}
-          files: publish/AzureSignTool.exe
+          name: AzureSignTool ${{ github.ref_name }}
+          files: |
+            publish/self-contained/AzureSignTool.exe
+            publish/framework/AzureSignTool.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
