@@ -36,7 +36,8 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: AzureSignTool ${{ github.ref_name }}
           files: |
-            publish/self-contained/AzureSignTool.exe
-            publish/framework/AzureSignTool.exe
+            publish/self-contained/AzureSignTool.exe#AzureSignTool-selfcontained.exe
+            publish/framework/AzureSignTool.exe#AzureSignTool-framework.exe
+
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
