@@ -21,13 +21,34 @@ namespace AzureSignTool
         public async Task<ErrorOr<AzureKeyVaultMaterializedConfiguration>> Materialize(AzureKeyVaultSignConfigurationSet configuration)
         {
             TokenCredential credential;
+
             if (configuration.ManagedIdentity)
             {
                 credential = new DefaultAzureCredential();
             }
-            else if(!string.IsNullOrWhiteSpace(configuration.AzureAccessToken))
+            else if (!string.IsNullOrWhiteSpace(configuration.AzureAccessToken))
             {
                 credential = new AccessTokenCredential(configuration.AzureAccessToken);
+            }
+            else if (!string.IsNullOrWhiteSpace(configuration.CertificateThumbprint))
+            {
+                // New: Load certificate from LocalMachine by thumbprint and use ClientCertificateCredential
+                using var store = new X509Store(StoreLocation.LocalMachine);
+                store.Open(OpenFlags.ReadOnly);
+
+                var certs = store.Certificates.Find(X509FindType.FindByThumbprint, configuration.CertificateThumbprint, false);
+                if (certs.Count == 0)
+                {
+                    return new InvalidOperationException($"Certificate with thumbprint '{configuration.CertificateThumbprint}' not found in LocalMachine store.");
+                }
+
+                var clientCertificate = certs[0];
+
+                credential = new ClientCertificateCredential(
+                    configuration.AzureTenantId,
+                    configuration.AzureClientId,
+                    clientCertificate
+                );
             }
             else
             {
@@ -45,7 +66,6 @@ namespace AzureSignTool
                 }
             }
 
-
             X509Certificate2 certificate;
             KeyVaultCertificate azureCertificate;
             try
@@ -62,6 +82,7 @@ namespace AzureSignTool
                     _logger.LogTrace($"Retrieving current version of certificate {configuration.AzureKeyVaultCertificateName}.");
                     azureCertificate = (await certClient.GetCertificateAsync(configuration.AzureKeyVaultCertificateName).ConfigureAwait(false)).Value;
                 }
+
                 _logger.LogTrace($"Retrieved certificate with Id {azureCertificate.Id}.");
 
                 certificate = new X509Certificate2(azureCertificate.Cer);
@@ -73,6 +94,7 @@ namespace AzureSignTool
 
                 return e;
             }
+
             var keyId = azureCertificate.KeyId;
 
             if (keyId is null)
