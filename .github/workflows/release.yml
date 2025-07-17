@@ -21,15 +21,15 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore
 
-      # ✅ Build 1: Self-contained single file (portable)
+      # Build 1: Self-contained single file (portable)
       - name: Publish self-contained single-file
         run: dotnet publish src/AzureSignTool/AzureSignTool.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishAot=false -o publish/self-contained
 
-      # ✅ Build 2: Framework-dependent (small)
+      # Build 2: Framework-dependent (small)
       - name: Publish framework-dependent
         run: dotnet publish src/AzureSignTool/AzureSignTool.csproj -c Release -r win-x64 --self-contained false -o publish/framework
 
-      # ✅ Upload both EXEs to the GitHub release
+      # Upload both EXEs to the GitHub release
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
