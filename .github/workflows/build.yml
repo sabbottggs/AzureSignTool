@@ -38,4 +38,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: AzureSignTool-win-x64
-          path: publish/
+          path: publish/   
