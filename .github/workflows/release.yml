@@ -38,6 +38,14 @@ jobs:
           files: |
             publish/self-contained/AzureSignTool.exe#AzureSignTool-selfcontained.exe
             publish/framework/AzureSignTool.exe#AzureSignTool-framework.exe
-
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Upload artifacts to Actions tab
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: AzureSignTool-Binaries
+          path: |
+            publish/self-contained/AzureSignTool.exe
+            publish/framework/AzureSignTool.exe
